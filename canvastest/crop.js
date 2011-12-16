@@ -1,5 +1,26 @@
 var img_src = 'data:image/gif;base64,R0lGODlhCwALAIAAAAAA3pn/ZiH5BAEAAAEALAAAAAALAAsAAAIUhA+hkcuO4lmNVindo7qyrIXiGBYAOw==';
 
+function get_placement(mouse_x, mouse_y, x, y, width, height) {
+    var r = 10;
+    if (mouse_x > x && mouse_x < x+width
+        && mouse_y > y && mouse_y < y+height){
+            return 'middle';
+    }
+    if (mouse_x > x-r && mouse_x < x+r){
+        if (mouse_y > y-r && mouse_y < y+r) {
+            return 'top_left';
+        } else if (mouse_y > y+height-r && mouse_y < y+height+r) {
+            return 'buttom_left';
+        }
+    } else if (mouse_x > x+width-5 && mouse_x < x+width+r){
+        if (mouse_y > y-r && mouse_y < y+r) {
+            return 'top_right';
+        } else if (mouse_y > y+height-r && mouse_y < y+height+r) {
+            return 'buttom_right';
+        }
+    }
+    return 'none';
+}
 $('document').ready(function() {
 
     var canvas = document.getElementById('test');
@@ -19,10 +40,10 @@ $('document').ready(function() {
             factor = Math.min(c_width/img.width, c_height/img.height);
 
             canvas_x = canvas;
-            var x = 0;
-            var y = 0;
-            var width = img.width/2*factor;
-            var height = img.width/2*factor;
+            var x = img.width*factor*0.15;
+            var y = img.height*factor*0.15;
+            var width = img.width*0.7*factor;
+            var height = img.height*0.7*factor;
             $(canvas).mousemove(function(e) {
                 mouse_x = e.pageX - this.offsetLeft;
                 mouse_y = e.pageY - this.offsetTop;
@@ -76,31 +97,76 @@ $('document').ready(function() {
                     if (y < 0) {
                         y = 0;
                     }
+                    if (height < 0) {
+                        height = -height;
+                        switch (holding) {
+                            case 'buttom_left':
+                                holding = 'top_left';
+                                break;
+                            case 'buttom_right':
+                                holding = 'top_right';
+                                break;
+                            case 'top_left':
+                                holding = 'buttom_left';
+                                break;
+                            case 'top_right':
+                                holding = 'buttom_right';
+                                break;
+                        }
+                    }
+                    if (width < 0) {
+                        width = -width;
+                        switch (holding) {
+                            case 'top_right':
+                                holding = 'top_left';
+                                break;
+                            case 'buttom_right':
+                                holding = 'buttom_left';
+                                break;
+                            case 'top_left':
+                                holding = 'top_right';
+                                break;
+                            case 'buttom_left':
+                                holding = 'buttom_right';
+                                break;
+                        }
+                    }
                     drawImage(x, y, width, height);
+                    hover = holding;
+                } else {
+                    hover = get_placement(mouse_x, mouse_y, x, y, width, height);
                 }
+                var cursor
+                switch (hover) {
+                    case 'none':
+                        cursor = 'auto';
+                        break;
+                    case 'top_left':
+                        cursor = 'nw-resize';
+                        break;
+                    case 'top_right':
+                        cursor = 'ne-resize';
+                        break;
+                    case 'buttom_left':
+                        cursor = 'sw-resize';
+                        break;
+                    case 'buttom_right':
+                        cursor = 'se-resize';
+                        break;
+                    case 'middle':
+                        cursor = 'move';
+                        break;
+                }
+                $('#test').css('cursor', cursor);
             });
             $(canvas).mousedown(function(e){
                 if(e.which === 1) {
                     mouse_x = e.pageX - this.offsetLeft;
                     mouse_y = e.pageY - this.offsetTop;
-                    r = 10;
-                    if (mouse_x > x-r && mouse_x < x+r){
-                        if (mouse_y > y-r && mouse_y < y+r) {
-                            holding = 'top_left';
-                        } else if (mouse_y > y+height-r && mouse_y < y+height+r) {
-                            holding = 'buttom_left';
-                        }
-                    } else if (mouse_x > x+width-5 && mouse_x < x+width+r){
-                        if (mouse_y > y-r && mouse_y < y+r) {
-                            holding = 'top_right';
-                        } else if (mouse_y > y+height-r && mouse_y < y+height+r) {
-                            holding = 'buttom_right';
-                        }
-                    } else if (mouse_x > x && mouse_x < x+width
-                        && mouse_y > y && mouse_y < y+width){
-                            holding = 'middle';
-                            holding_x = mouse_x-x;
-                            holding_y = mouse_y-y;
+                    holding = get_placement(mouse_x, mouse_y, x, y, width, height);
+                    if (holding === 'middle') {
+                        holding_x = mouse_x-x;
+                        holding_y = mouse_y-y;
                     }
                 }
                 console.log(holding);
@@ -126,7 +192,7 @@ $('document').ready(function() {
                         dest_width, dest_height);
                 
                 ctx.fillStyle="rgba(0, 0, 10, 0.7)";
-                ctx.fillRect(0, 0, img.width, img.height);
+                ctx.fillRect(0, 0, img.width*factor, img.height*factor);
 
                 ctx.beginPath();
                 ctx.rect(x,y, width, height);
